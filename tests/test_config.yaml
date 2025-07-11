@@ -1,0 +1,25 @@
+databases:
+  test_sqlite:
+    type: sqlite
+    database: ":memory:"
+    description: "Test SQLite database"
+  chinook_sqlite:
+    type: sqlite
+    database: "tests/Chinook_Sqlite.sqlite"
+    description: "Chinook sample SQLite database"
+  chinook_sqlite_conn_str:
+     type: sqlite
+     description: blah
+     connection_string: "sqlite:///tests/tools/Chinook_Sqlite.sqlite"
+  test_postgres:
+    type: postgresql
+    host: ihopethishostdoesnotexist.com
+    database: testdb
+    username: user
+    password: pass
+    description: "Test PostgreSQL database"
+
+settings:
+  max_query_timeout: 30
+  max_rows_per_query: 500
+  sample_size: 10

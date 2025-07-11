@@ -1,0 +1,65 @@
+databases:
+  # Option 1: Use connection string (existing format)
+  chinook:
+    type: sqlite
+    connection_string: "sqlite:///tests/Chinook_Sqlite.sqlite"
+    description: "Chinook sample SQLite database"
+
+  # Option 2: Use individual fields (new format)
+  my_postgres:
+    type: postgresql
+    description: "PostgreSQL database with individual fields"
+    host: localhost
+    port: 5432
+    database: mydb
+    username: myuser
+    password: mypassword
+    extra_params:
+      sslmode: require
+      connect_timeout: "10"
+
+  # Examples using password store (pass) integration
+  prod_postgres:
+    type: postgresql
+    description: "Production PostgreSQL using default pass key"
+    host: prod-db.example.com
+    port: 5432
+    database: myapp
+    username: app_user
+    # No password field - will use pass entry: databases/prod_postgres
+
+  dev_postgres:
+    type: postgresql
+    description: "Development PostgreSQL using custom pass key"
+    host: dev-db.example.com
+    port: 5432
+    database: dev_myapp
+    username: dev_user
+    password_store_key: "company/dev/postgres"
+    # Will use pass entry: company/dev/postgres
+
+  memory_sqlite:
+    type: sqlite
+    description: "In-memory SQLite for testing"
+    database: ":memory:"
+
+  snowflake_example:
+    type: snowflake
+    description: "Snowflake data warehouse"
+    host: "myaccount.snowflakecomputing.com"
+    port: 443
+    database: "PROD_DWH"
+    username: "myuser@example.com"
+    password: "mypassword"
+    account: "myaccount"
+    extra_params:
+      warehouse: "COMPUTE_WH"
+      schema: "PUBLIC"
+      authenticator: "externalbrowser"
+
+# Global settings
+settings:
+  max_query_timeout: 30
+  max_rows_per_query: 500
+  sample_size: 10
+  enable_write_operations: false
