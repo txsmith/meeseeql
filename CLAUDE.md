@@ -42,6 +42,7 @@ This is an MCP (Model Context Protocol) server for exploring SQL databases. The 
 
 - **`main.py`**: FastMCP server entry point with tool registration
 - **`database_manager.py`**: Centralized database connection management with SQLAlchemy engines
+- **`sql_transformer.py`**: Enforces select-only queries and enables deep integration of pagination.
 - **`tools/`**: Business logic modules for each MCP tool:
   - `list_databases.py` - List configured databases
   - `execute_query.py` - Execute SELECT queries 
@@ -69,9 +70,8 @@ Supports multiple database types via SQLAlchemy:
 
 ### Security Model
 
-- Read-only operations enforced by user permissions, not application logic
+- Read-only operations enforced by application logic
 - Connection pooling with configurable timeouts
-- Logging disabled for database connectors to prevent stdout pollution
 - Test isolation using separate configuration files
 
 ## Development Workflow

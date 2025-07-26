@@ -1,6 +1,8 @@
 # meeseeql
-A FastMCP server for exploring multiple databases with support for SELECT queries, table sampling, and structure inspection.
+[![Tests](https://github.com/txsmith/meeseeql/actions/workflows/test.yml/badge.svg)](https://github.com/txsmith/meeseeql/actions/workflows/test.yml)
+![PyPI - Version](https://img.shields.io/pypi/v/meeseeql)
 
+A FastMCP server for exploring multiple databases with support for SELECT queries, table sampling, and structure inspection.
 
 ## Features
 
@@ -35,17 +37,21 @@ A FastMCP server for exploring multiple databases with support for SELECT querie
 
 ## Installation
 
-### From GitHub
+From PyPI:
+```bash
+uvx meeseeql
+```
+
+From GitHub:
 ```bash
 uvx --from git+https://github.com/txsmith/meeseeql.git meeseeql
 ```
 
-### For Development
-Install dependencies using uv:
+For development:
 ```bash
 git clone https://github.com/txsmith/meeseeql.git
 cd meeseeql
-uv sync
+uv sync --dev
 ```
 
 ## Configuration
@@ -70,7 +76,7 @@ fastmcp dev main.py
 
 ### Claude Desktop
 ```bash
-claude mcp add --scope user meeseeql uvx --from git+https://github.com/txsmith/meeseeql.git meeseeql
+claude mcp add --scope user sql-explorer uvx meeseeql
 ```
 
 ### Cursor
@@ -83,7 +89,7 @@ Add to your MCP settings in Cursor:
 {
   "meeseeql": {
     "command": "uvx", 
-    "args": ["--from", "git+https://github.com/txsmith/meeseeql.git", "meeseeql"]
+    "args": ["meeseeql"]
   }
 }
 ```
