@@ -17,10 +17,51 @@ mcp = FastMCP("Database Explorer")
 db_manager = None
 
 
+def find_config_file():
+    """Looks for the config file in the following places:
+    1. --config flag (if provided)
+    2. MEESEEQL_CONFIG environment variable
+    3. ./config.yaml (current working directory)
+    4. ~/.config/meeseeql/config.yaml
+    5. ~/meeseeql.yaml (simple home directory)
+    """
+    if len(sys.argv) > 2 and sys.argv[1] == "--config":
+        return sys.argv[2]
+
+    env_config = os.environ.get("MEESEEQL_CONFIG")
+    if env_config and os.path.exists(env_config):
+        return env_config
+
+    cwd_config = os.path.join(os.getcwd(), "config.yaml")
+    if os.path.exists(cwd_config):
+        return cwd_config
+
+    home_dir = os.path.expanduser("~")
+    xdg_config = os.path.join(home_dir, ".config", "meeseeql", "config.yaml")
+    if os.path.exists(xdg_config):
+        return xdg_config
+
+    home_config = os.path.join(home_dir, "meeseeql.yaml")
+    if os.path.exists(home_config):
+        return home_config
+
+    raise ValueError("Config file not found")
+
+
+def get_db_manager():
+    """Get or initialize the database manager"""
+    global db_manager
+    if db_manager is None:
+        config_path = find_config_file()
+        config = load_config(config_path)
+        db_manager = DatabaseManager(config)
+    return db_manager
+
+
 @mcp.tool()
 def list_databases() -> ToolResult:
     """List all configured databases"""
-    result = tools.list_databases(db_manager)
+    result = tools.list_databases(get_db_manager())
     return ToolResult(
         content=[TextContent(type="text", text=str(result))],
         structured_content=result.model_dump(),
@@ -45,7 +86,7 @@ async def execute_query(
         accurate_count: Run COUNT query for exact pagination (default: False, slower but accurate)
     """
     result = await tools.execute_query(
-        db_manager, database, query, limit, page, accurate_count
+        get_db_manager(), database, query, limit, page, accurate_count
     )
     return ToolResult(
         content=[TextContent(type="text", text=str(result))],
@@ -60,7 +101,7 @@ async def sample_table(
     db_schema: str | None = None,
 ) -> ToolResult:
     """Sample rows from a table"""
-    result = await tools.sample_table(db_manager, database, table_name, db_schema)
+    result = await tools.sample_table(get_db_manager(), database, table_name, db_schema)
     return ToolResult(
         content=[TextContent(type="text", text=str(result))],
         structured_content=result.model_dump(),
@@ -77,7 +118,7 @@ async def describe_table(
 ) -> ToolResult:
     """Get table structure including columns and foreign keys with pagination"""
     result = await tools.describe_table(
-        db_manager, database, table_name, db_schema, limit, page
+        get_db_manager(), database, table_name, db_schema, limit, page
     )
     return ToolResult(
         content=[TextContent(type="text", text=str(result))],
@@ -102,7 +143,7 @@ async def search_tables(
         page: Page number (default: 1)
     """
     result = await tools.search_tables(
-        db_manager, database, search_term, limit, page, schema
+        get_db_manager(), database, search_term, limit, page, schema
     )
     return ToolResult(
         content=[TextContent(type="text", text=str(result))],
@@ -113,41 +154,22 @@ async def search_tables(
 @mcp.tool()
 async def test_connection(database: str) -> ToolResult:
     """Test database connection, useful for debugging issues"""
-    result = await tools.test_connection(db_manager, database)
+    result = await tools.test_connection(get_db_manager(), database)
     return ToolResult(
         content=[TextContent(type="text", text=str(result))],
         structured_content=result.model_dump(),
     )
 
 
-# Looks for the config file in the following places:
-# 1. --config flag (if provided)
-# 2. MEESEEQL_CONFIG environment variable
-# 3. ./config.yaml (current working directory)
-# 4. ~/.config/meeseeql/config.yaml
-# 5. ~/meeseeql.yaml (simple home directory)
-def find_config_file():
-    if len(sys.argv) > 2 and sys.argv[1] == "--config":
-        return sys.argv[2]
-
-    env_config = os.environ.get("MEESEEQL_CONFIG")
-    if env_config and os.path.exists(env_config):
-        return env_config
-
-    cwd_config = os.path.join(os.getcwd(), "config.yaml")
-    if os.path.exists(cwd_config):
-        return cwd_config
-
-    home_dir = os.path.expanduser("~")
-    xdg_config = os.path.join(home_dir, ".config", "meeseeql", "config.yaml")
-    if os.path.exists(xdg_config):
-        return xdg_config
-
-    home_config = os.path.join(home_dir, "meeseeql.yaml")
-    if os.path.exists(home_config):
-        return home_config
-
-    raise ValueError("Config file not found")
+@mcp.tool()
+def reload_config() -> ToolResult:
+    """Reload configuration file and report what changed"""
+    config_path = find_config_file()
+    result = tools.reload_config(get_db_manager(), config_path)
+    return ToolResult(
+        content=[TextContent(type="text", text=str(result))],
+        structured_content=result.model_dump(),
+    )
 
 
 def main():

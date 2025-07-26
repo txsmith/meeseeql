@@ -218,6 +218,16 @@ class DatabaseManager:
         }
         return default_schemas.get(dialect, "public")
 
+    def reload_config(self, new_config: AppConfig, changed_db_names: set[str]):
+        for db_name in changed_db_names:
+            if db_name in self.engines:
+                engine = self.engines[db_name]
+                if engine:
+                    engine.dispose()
+                del self.engines[db_name]
+
+        self.config = new_config
+
 
 def load_config(config_path: str) -> AppConfig:
     with open(config_path, "r") as f:
