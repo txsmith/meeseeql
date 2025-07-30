@@ -60,7 +60,11 @@ def get_db_manager():
 
 @mcp.tool()
 def list_databases() -> ToolResult:
-    """List all configured databases"""
+    """List all configured databases and their settings.
+    This tool also gives you the full path to the config file
+    so you can use it to make edits if the user requests it;
+    simply edit the config file and call the reload_configt tool.
+    """
     result = tools.list_databases(get_db_manager())
     return ToolResult(
         content=[TextContent(type="text", text=str(result))],

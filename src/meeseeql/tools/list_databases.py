@@ -16,26 +16,33 @@ class DatabaseInfo(BaseModel):
 class DatabaseList(BaseModel):
     databases: List[DatabaseInfo]
     total_count: int
+    config_path: str | None = None
 
     def __str__(self) -> str:
         if not self.databases:
             return "No databases configured"
 
         result = ""
+        if self.config_path:
+            result += f"# Config file: {self.config_path}\n"
+
+        result += "databases:\n"
 
         for db in self.databases:
-            description = db.description
-            if len(description) > 20:
-                description = description[:17] + ".."
+            result += f"  {db.name}:\n"
+            result += f"    type: {db.type}\n"
+            result += f'    description: "{db.description}"\n'
 
-            description = description.ljust(20)
+            if db.host:
+                result += f"    host: {db.host}\n"
+            if db.port:
+                result += f"    port: {db.port}\n"
+            if db.database:
+                result += f"    database: {db.database}\n"
+            if db.username:
+                result += f"    username: {db.username}\n"
 
-            if db.type == "sqlite":
-                connection_info = db.database or db.name
-            else:
-                connection_info = f"{db.username}@{db.host}:{db.port}"
-
-            result += f"{description} {connection_info}\n"
+            result += "\n"
 
         return result.rstrip()
 
@@ -56,4 +63,8 @@ def list_databases(db_manager: DatabaseManager) -> DatabaseList:
             )
         )
 
-    return DatabaseList(databases=databases, total_count=len(databases))
+    return DatabaseList(
+        databases=databases,
+        total_count=len(databases),
+        config_path=db_manager.config.config_path,
+    )

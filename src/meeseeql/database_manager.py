@@ -84,6 +84,7 @@ class DatabaseConfig(BaseModel):
 class AppConfig(BaseModel):
     databases: Dict[str, DatabaseConfig]
     settings: Dict[str, Any]
+    config_path: str | None = None
 
     @model_validator(mode="after")
     def validate_config(self):
@@ -232,4 +233,6 @@ class DatabaseManager:
 def load_config(config_path: str) -> AppConfig:
     with open(config_path, "r") as f:
         config_data = yaml.safe_load(f)
-    return AppConfig(**config_data)
+    config = AppConfig(**config_data)
+    config.config_path = config_path
+    return config
