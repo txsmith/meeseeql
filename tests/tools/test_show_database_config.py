@@ -4,11 +4,7 @@ import pytest
 from pathlib import Path
 
 from meeseeql.database_manager import load_config, DatabaseManager
-from meeseeql.tools.list_databases import list_databases, DatabaseList
-
-# Add the project root to Python path so we can import modules
-project_root = Path(__file__).parent.parent
-sys.path.insert(0, str(project_root))
+from meeseeql.tools.show_database_config import show_database_config, DatabaseList
 
 
 @pytest.fixture
@@ -19,9 +15,9 @@ def db_manager():
     return DatabaseManager(config)
 
 
-def test_list_databases_returns_all_configured_databases(db_manager):
-    """Test that list_databases returns all databases from config"""
-    result = list_databases(db_manager)
+def test_show_database_config_returns_all_configured_databases(db_manager):
+    """Test that show_database_config returns all databases from config"""
+    result = show_database_config(db_manager)
 
     assert isinstance(result, DatabaseList)
     assert len(result.databases) == 4
@@ -37,9 +33,9 @@ def test_list_databases_returns_all_configured_databases(db_manager):
     assert sorted(db_names) == sorted(expected_names)
 
 
-def test_list_databases_includes_correct_database_info(db_manager):
+def test_show_database_config_includes_correct_database_info(db_manager):
     """Test that each database entry has correct structure and info"""
-    result = list_databases(db_manager)
+    result = show_database_config(db_manager)
 
     sqlite_db = next((db for db in result.databases if db.name == "test_sqlite"), None)
     assert sqlite_db is not None
@@ -51,14 +47,14 @@ def test_list_databases_includes_correct_database_info(db_manager):
     assert sqlite_db.description == "Test SQLite database"
 
 
-def test_list_databases_with_empty_config():
-    """Test list_databases with empty database config"""
+def test_show_database_config_with_empty_config():
+    """Test show_database_config with empty database config"""
     from meeseeql.database_manager import AppConfig
 
     empty_config = AppConfig(databases={}, settings={})
     empty_db_manager = DatabaseManager(empty_config)
 
-    result = list_databases(empty_db_manager)
+    result = show_database_config(empty_db_manager)
 
     assert isinstance(result, DatabaseList)
     assert result.total_count == 0

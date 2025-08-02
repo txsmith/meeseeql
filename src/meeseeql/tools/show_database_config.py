@@ -47,7 +47,7 @@ class DatabaseList(BaseModel):
         return result.rstrip()
 
 
-def list_databases(db_manager: DatabaseManager) -> DatabaseList:
+def show_database_config(db_manager: DatabaseManager) -> DatabaseList:
     """List all configured databases"""
     databases = []
     for db_name, db_config in db_manager.config.databases.items():

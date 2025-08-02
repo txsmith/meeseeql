@@ -44,7 +44,7 @@ This is an MCP (Model Context Protocol) server for exploring SQL databases. The 
 - **`database_manager.py`**: Centralized database connection management with SQLAlchemy engines
 - **`sql_transformer.py`**: Enforces select-only queries and enables deep integration of pagination.
 - **`tools/`**: Business logic modules for each MCP tool:
-  - `list_databases.py` - List configured databases
+  - `show_database_config.py` - List configured databases
   - `fuzzy_search.py` - Fuzzy find tables, columns and enums
   - `table_summary.py` - Get table schema, sample rows and foreign keys
   - `execute_query.py` - Execute SELECT queries 

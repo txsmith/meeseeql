@@ -17,12 +17,12 @@ A FastMCP server for exploring multiple databases with support for SELECT querie
 
 
 ## Available Tools
-
-- **list_databases** - Lists all configured databases with their types and descriptions
+- **fuzzy_search** - Search across tables, columns and enum values
 - **table_summary** - Gets table structure including columns, data types, and foreign keys
 - **execute_query** - Executes SELECT queries on databases with pagination support
+- **show_database_config** - Returns the configured DBs + path to the loaded config file
+- **reload_config** - Reloads configuration. Allows agents to make changes on-demand
 - **test_connection** - Tests database connection to verify configuration
-
 
 ## Supported Databases
 
