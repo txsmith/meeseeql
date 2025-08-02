@@ -19,10 +19,8 @@ A FastMCP server for exploring multiple databases with support for SELECT querie
 ## Available Tools
 
 - **list_databases** - Lists all configured databases with their types and descriptions
-- **search_tables** - Search for tables in the database with optional filtering
-- **describe_table** - Gets table structure including columns, data types, and foreign keys
+- **table_summary** - Gets table structure including columns, data types, and foreign keys
 - **execute_query** - Executes SELECT queries on databases with pagination support
-- **sample_table** - Samples rows from a table with automatic row limiting
 - **test_connection** - Tests database connection to verify configuration
 
 

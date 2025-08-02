@@ -5,9 +5,9 @@ from meeseeql.database_manager import (
     load_config,
     DatabaseManager,
 )
-from meeseeql.tools.describe_table import (
-    describe_table,
-    TableDescription,
+from meeseeql.tools.table_summary import (
+    table_summary,
+    TableSummary,
     TableNotFoundError,
 )
 
@@ -19,11 +19,11 @@ def db_manager():
     return DatabaseManager(config)
 
 
-async def test_describe_table_album_structure(db_manager):
-    """Test that describe_table correctly describes Album table structure"""
-    result = await describe_table(db_manager, "chinook_sqlite", "Album")
+async def test_table_summary_album_structure(db_manager):
+    """Test that table_summary correctly describes Album table structure"""
+    result = await table_summary(db_manager, "chinook_sqlite", "Album")
 
-    assert isinstance(result, TableDescription)
+    assert isinstance(result, TableSummary)
     assert result.table == "main.Album"
 
     assert len(result.columns) == 3
@@ -44,11 +44,11 @@ async def test_describe_table_album_structure(db_manager):
     assert fk.to_columns == ["ArtistId"]
 
 
-async def test_describe_table_artist_incoming_fks(db_manager):
-    """Test that describe_table correctly finds incoming foreign keys for Artist table"""
-    result = await describe_table(db_manager, "chinook_sqlite", "Artist")
+async def test_table_summary_artist_incoming_fks(db_manager):
+    """Test that table_summary correctly finds incoming foreign keys for Artist table"""
+    result = await table_summary(db_manager, "chinook_sqlite", "Artist")
 
-    assert isinstance(result, TableDescription)
+    assert isinstance(result, TableSummary)
     assert result.table == "main.Artist"
 
     assert len(result.incoming_foreign_keys) >= 1
@@ -62,17 +62,17 @@ async def test_describe_table_artist_incoming_fks(db_manager):
     assert album_fk.to_columns == ["ArtistId"]
 
 
-async def test_describe_table_nonexistent_table(db_manager):
-    """Test that describe_table handles non-existent table gracefully"""
+async def test_table_summary_nonexistent_table(db_manager):
+    """Test that table_summary handles non-existent table gracefully"""
     with pytest.raises(TableNotFoundError):
-        await describe_table(db_manager, "chinook_sqlite", "NonexistentTable")
+        await table_summary(db_manager, "chinook_sqlite", "NonexistentTable")
 
 
-async def test_describe_table_column_types_and_nullability(db_manager):
-    """Test that describe_table correctly reports column types and nullability"""
-    result = await describe_table(db_manager, "chinook_sqlite", "Track")
+async def test_table_summary_column_types_and_nullability(db_manager):
+    """Test that table_summary correctly reports column types and nullability"""
+    result = await table_summary(db_manager, "chinook_sqlite", "Track")
 
-    assert isinstance(result, TableDescription)
+    assert isinstance(result, TableSummary)
 
     track_id_col = next((col for col in result.columns if col.name == "TrackId"), None)
     name_col = next((col for col in result.columns if col.name == "Name"), None)
@@ -85,36 +85,34 @@ async def test_describe_table_column_types_and_nullability(db_manager):
     assert name_col.nullable is False
 
 
-async def test_describe_table_pagination_fields(db_manager):
-    """Test that describe_table returns pagination fields correctly"""
-    result = await describe_table(
-        db_manager, "chinook_sqlite", "Track", limit=5, page=1
-    )
+async def test_table_summary_pagination_fields(db_manager):
+    """Test that table_summary returns pagination fields correctly"""
+    result = await table_summary(db_manager, "chinook_sqlite", "Track", limit=5, page=1)
 
-    assert isinstance(result, TableDescription)
+    assert isinstance(result, TableSummary)
     assert result.current_page == 1
     assert result.total_count > 0
     assert result.total_pages > 0
     assert len(result.columns) <= 5
 
 
-async def test_describe_table_pagination_limit_validation(db_manager):
-    """Test that describe_table validates pagination parameters"""
-    from meeseeql.tools.describe_table import DescribeTableError
+async def test_table_summary_pagination_limit_validation(db_manager):
+    """Test that table_summary validates pagination parameters"""
+    from meeseeql.tools.table_summary import TableSummaryError
 
-    with pytest.raises(DescribeTableError, match="Limit must be greater than 0"):
-        await describe_table(db_manager, "chinook_sqlite", "Track", limit=0)
+    with pytest.raises(TableSummaryError, match="Limit must be greater than 0"):
+        await table_summary(db_manager, "chinook_sqlite", "Track", limit=0)
 
-    with pytest.raises(DescribeTableError, match="Page number must be greater than 0"):
-        await describe_table(db_manager, "chinook_sqlite", "Track", page=0)
+    with pytest.raises(TableSummaryError, match="Page number must be greater than 0"):
+        await table_summary(db_manager, "chinook_sqlite", "Track", page=0)
 
 
-async def test_describe_table_pagination_second_page(db_manager):
-    """Test that describe_table pagination works for second page"""
-    result_page1 = await describe_table(
+async def test_table_summary_pagination_second_page(db_manager):
+    """Test that table_summary pagination works for second page"""
+    result_page1 = await table_summary(
         db_manager, "chinook_sqlite", "Track", limit=3, page=1
     )
-    result_page2 = await describe_table(
+    result_page2 = await table_summary(
         db_manager, "chinook_sqlite", "Track", limit=3, page=2
     )
 
@@ -136,12 +134,12 @@ async def test_describe_table_pagination_second_page(db_manager):
         assert page1_items != page2_items
 
 
-async def test_describe_table_case_insensitive(db_manager):
-    """Test that describe_table handles case insensitive table names correctly"""
-    result_exact = await describe_table(db_manager, "chinook_sqlite", "Album")
-    result_lower = await describe_table(db_manager, "chinook_sqlite", "album")
-    result_upper = await describe_table(db_manager, "chinook_sqlite", "ALBUM")
-    result_mixed = await describe_table(db_manager, "chinook_sqlite", "AlBuM")
+async def test_table_summary_case_insensitive(db_manager):
+    """Test that table_summary handles case insensitive table names correctly"""
+    result_exact = await table_summary(db_manager, "chinook_sqlite", "Album")
+    result_lower = await table_summary(db_manager, "chinook_sqlite", "album")
+    result_upper = await table_summary(db_manager, "chinook_sqlite", "ALBUM")
+    result_mixed = await table_summary(db_manager, "chinook_sqlite", "AlBuM")
 
     exact_cols = {col.name for col in result_exact.columns}
     lower_cols = {col.name for col in result_lower.columns}
@@ -151,4 +149,4 @@ async def test_describe_table_case_insensitive(db_manager):
 
     # Test that non-existent table still raises error
     with pytest.raises(TableNotFoundError):
-        await describe_table(db_manager, "chinook_sqlite", "nonexistenttable")
+        await table_summary(db_manager, "chinook_sqlite", "nonexistenttable")

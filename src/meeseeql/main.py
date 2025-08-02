@@ -98,22 +98,22 @@ async def execute_query(
     )
 
 
-@mcp.tool()
-async def sample_table(
-    database: str,
-    table_name: str,
-    db_schema: str | None = None,
-) -> ToolResult:
-    """Sample rows from a table"""
-    result = await tools.sample_table(get_db_manager(), database, table_name, db_schema)
-    return ToolResult(
-        content=[TextContent(type="text", text=str(result))],
-        structured_content=result.model_dump(),
-    )
+# @mcp.tool()
+# async def sample_table(
+#     database: str,
+#     table_name: str,
+#     db_schema: str | None = None,
+# ) -> ToolResult:
+#     """Sample rows from a table"""
+#     result = await tools.sample_table(get_db_manager(), database, table_name, db_schema)
+#     return ToolResult(
+#         content=[TextContent(type="text", text=str(result))],
+#         structured_content=result.model_dump(),
+#     )
 
 
 @mcp.tool()
-async def describe_table(
+async def table_summary(
     database: str,
     table_name: str,
     db_schema: str | None = None,
@@ -121,7 +121,7 @@ async def describe_table(
     page: int = 1,
 ) -> ToolResult:
     """Get table structure including columns and foreign keys with pagination"""
-    result = await tools.describe_table(
+    result = await tools.table_summary(
         get_db_manager(), database, table_name, db_schema, limit, page
     )
     return ToolResult(

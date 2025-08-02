@@ -1,8 +1,8 @@
-import os
 from typing import List
 from pydantic import BaseModel
 from meeseeql.database_manager import DatabaseManager
 from meeseeql.sql_transformer import SqlQueryTransformer
+from meeseeql.tools.sql_utils import load_sql_query
 
 
 class FuzzySearchRow(BaseModel):
@@ -53,15 +53,9 @@ async def fuzzy_search(
 
     dialect = db_manager.get_dialect_name(database)
 
-    sql_file_path = os.path.join(os.path.dirname(__file__), "sql", dialect, "fuzzy.sql")
-
-    if not os.path.exists(sql_file_path):
-        raise ValueError(f"Fuzzy search is not supported for {dialect} databases.")
+    sql_template = load_sql_query(dialect, "fuzzy")
 
     limit = min(250, db_manager.config.settings.get("max_rows_per_query", 250))
-
-    with open(sql_file_path, "r") as f:
-        sql_template = f.read()
 
     schema_value = schema if schema else ""
     sql_query = sql_template.replace("{{search_term}}", search_term)

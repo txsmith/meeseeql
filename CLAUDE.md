@@ -47,7 +47,7 @@ This is an MCP (Model Context Protocol) server for exploring SQL databases. The 
   - `list_databases.py` - List configured databases
   - `execute_query.py` - Execute SELECT queries 
   - `sample_table.py` - Sample table rows with limits
-  - `describe_table.py` - Get table schema and foreign keys
+  - `table_summary.py` - Get table schema and foreign keys
   - `search_tables.py` - List tables with hierarchical schema structure
 
 ### Configuration

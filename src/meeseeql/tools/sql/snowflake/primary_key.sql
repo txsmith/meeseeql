@@ -1,0 +1,1 @@
+SELECT 'snowflake does not have PKs' as column_name LIMIT 0
