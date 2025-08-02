@@ -131,28 +131,51 @@ async def describe_table(
 
 
 @mcp.tool()
-async def search_tables(
+async def fuzzy_search(
     database: str,
-    search_term: str | None = None,
+    search_term: str,
     schema: str | None = None,
-    limit: int = 500,
-    page: int = 1,
 ) -> ToolResult:
-    """Search for tables in the specified database with optional filtering and relevance-based ordering
+    """Perform fuzzy search across tables, columns, and enum values in a PostgreSQL database.
+
+    Searches for the given term in table names, column names, and enum values,
+    ranking results by relevance with exact matches scoring highest.
 
     Args:
-        database: Database name to search in
-        search_term: Term to search for in table names. Leave empty to list all tables.
-        limit: Maximum rows per page (default: 500)
-        page: Page number (default: 1)
+        database: Database name to search in (must be PostgreSQL)
+        search_term: A single term to search for across database objects.
+        schema: Optional schema to limit search to (default: searches all schemas)
     """
-    result = await tools.search_tables(
-        get_db_manager(), database, search_term, limit, page, schema
-    )
+    result = await tools.fuzzy_search(get_db_manager(), database, search_term, schema)
     return ToolResult(
         content=[TextContent(type="text", text=str(result))],
         structured_content=result.model_dump(),
     )
+
+
+# @mcp.tool()
+# async def search_tables(
+#     database: str,
+#     search_term: str | None = None,
+#     schema: str | None = None,
+#     limit: int = 500,
+#     page: int = 1,
+# ) -> ToolResult:
+#     """Search for tables in the specified database with optional filtering and relevance-based ordering
+#
+#     Args:
+#         database: Database name to search in
+#         search_term: Term to search for in table names. Leave empty to list all tables.
+#         limit: Maximum rows per page (default: 500)
+#         page: Page number (default: 1)
+#     """
+#     result = await tools.search_tables(
+#         get_db_manager(), database, search_term, limit, page, schema
+#     )
+#     return ToolResult(
+#         content=[TextContent(type="text", text=str(result))],
+#         structured_content=result.model_dump(),
+#     )
 
 
 @mcp.tool()

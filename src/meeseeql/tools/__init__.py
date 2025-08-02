@@ -5,6 +5,7 @@ from meeseeql.tools.describe_table import describe_table
 from meeseeql.tools.search_tables import search_tables
 from meeseeql.tools.test_connection import test_connection
 from meeseeql.tools.reload_config import reload_config
+from meeseeql.tools.fuzzy_search import fuzzy_search
 
 __all__ = [
     "list_databases",
@@ -14,4 +15,5 @@ __all__ = [
     "search_tables",
     "test_connection",
     "reload_config",
+    "fuzzy_search",
 ]
