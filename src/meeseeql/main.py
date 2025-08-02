@@ -98,20 +98,6 @@ async def execute_query(
     )
 
 
-# @mcp.tool()
-# async def sample_table(
-#     database: str,
-#     table_name: str,
-#     db_schema: str | None = None,
-# ) -> ToolResult:
-#     """Sample rows from a table"""
-#     result = await tools.sample_table(get_db_manager(), database, table_name, db_schema)
-#     return ToolResult(
-#         content=[TextContent(type="text", text=str(result))],
-#         structured_content=result.model_dump(),
-#     )
-
-
 @mcp.tool()
 async def table_summary(
     database: str,
@@ -151,31 +137,6 @@ async def fuzzy_search(
         content=[TextContent(type="text", text=str(result))],
         structured_content=result.model_dump(),
     )
-
-
-# @mcp.tool()
-# async def search_tables(
-#     database: str,
-#     search_term: str | None = None,
-#     schema: str | None = None,
-#     limit: int = 500,
-#     page: int = 1,
-# ) -> ToolResult:
-#     """Search for tables in the specified database with optional filtering and relevance-based ordering
-#
-#     Args:
-#         database: Database name to search in
-#         search_term: Term to search for in table names. Leave empty to list all tables.
-#         limit: Maximum rows per page (default: 500)
-#         page: Page number (default: 1)
-#     """
-#     result = await tools.search_tables(
-#         get_db_manager(), database, search_term, limit, page, schema
-#     )
-#     return ToolResult(
-#         content=[TextContent(type="text", text=str(result))],
-#         structured_content=result.model_dump(),
-#     )
 
 
 @mcp.tool()
