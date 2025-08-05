@@ -57,6 +57,19 @@ databases:
       schema: "PUBLIC"
       authenticator: "externalbrowser"
 
+  # Schema filtering examples
+  staging_postgres:
+    type: postgresql
+    host: db.example.com
+    port: 5432
+    exclude_schemas: ["archived", "analytics_cache", "temp"]
+
+  dwh_snowflake:
+    type: snowflake
+    host: "myaccount.snowflakecomputing.com"
+    database: "PROD_DWH"
+    include_schemas: ["SALES", "MARKETING", "FINANCE", "OPERATIONS"]
+
 # Global settings
 settings:
   max_query_timeout: 30

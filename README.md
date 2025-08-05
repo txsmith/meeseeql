@@ -17,7 +17,7 @@ A FastMCP server for exploring multiple databases with support for SELECT querie
 
 
 ## Available Tools
-- **fuzzy_search** - Search across tables, columns and enum values
+- **search** - Search across tables, columns and enum values
 - **table_summary** - Gets table structure including columns, data types, and foreign keys
 - **execute_query** - Executes SELECT queries on databases with pagination support
 - **show_database_config** - Returns the configured DBs + path to the loaded config file

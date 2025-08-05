@@ -42,9 +42,6 @@ SELECT
 FROM all_matches
 WHERE
     (LOWER(object_name) LIKE LOWER('%{{search_term}}%'))
-  AND (
-    '{{schema_filter}}' = '' OR schema_name = '{{schema_filter}}'
-  )
 ORDER BY
   ranking_score DESC,
   result_type ASC,

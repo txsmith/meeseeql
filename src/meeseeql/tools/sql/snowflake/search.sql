@@ -39,9 +39,6 @@ FROM all_matches
 WHERE
     (object_name ILIKE '%' || '{{search_term}}' || '%'
      OR EDITDISTANCE(LOWER(object_name), LOWER('{{search_term}}')) <= 0.3*LENGTH('{{search_term}}'))
-  AND (
-    '{{schema_filter}}' = '' OR schema_name = '{{schema_filter}}'
-  )
 ORDER BY
   ranking_score DESC,
   result_type,

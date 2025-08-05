@@ -5,7 +5,7 @@ from meeseeql.sql_transformer import SqlQueryTransformer
 from meeseeql.tools.sql_utils import load_sql_query
 
 
-class FuzzySearchRow(BaseModel):
+class SearchRow(BaseModel):
     object_type: str
     schema_name: str
     user_friendly_descriptor: str
@@ -13,8 +13,8 @@ class FuzzySearchRow(BaseModel):
     model_config = {"extra": "forbid"}
 
 
-class FuzzySearchResponse(BaseModel):
-    rows: List[FuzzySearchRow]
+class SearchResponse(BaseModel):
+    rows: List[SearchRow]
 
     def __str__(self) -> str:
         if not self.rows:
@@ -23,7 +23,9 @@ class FuzzySearchResponse(BaseModel):
         result = ""
 
         for row in self.rows:
-            if row.data_type and row.data_type != "null":
+            if row.data_type == "table":
+                result += f"{row.object_type}: {row.user_friendly_descriptor}\n"
+            elif row.data_type and row.data_type != "null":
                 result += f"{row.object_type}: {row.user_friendly_descriptor} ({row.data_type}) in {row.schema_name}\n"
             else:
                 result += f"{row.object_type}: {row.user_friendly_descriptor} in {row.schema_name}\n"
@@ -43,27 +45,41 @@ class FuzzySearchResponse(BaseModel):
             return str(value)
 
 
-async def fuzzy_search(
+async def search(
     db_manager: DatabaseManager,
     database: str,
     search_term: str,
     schema: str | None = None,
-) -> FuzzySearchResponse:
-    """Execute a fuzzy search across tables, columns, and enum values in a PostgreSQL database"""
-
+) -> SearchResponse:
     dialect = db_manager.get_dialect_name(database)
 
-    sql_template = load_sql_query(dialect, "fuzzy")
+    sql_template = load_sql_query(dialect, "search")
 
     limit = min(250, db_manager.config.settings.get("max_rows_per_query", 250))
 
-    schema_value = schema if schema else ""
     sql_query = sql_template.replace("{{search_term}}", search_term)
-    sql_query = sql_query.replace("{{schema_filter}}", schema_value)
 
     transformer = SqlQueryTransformer(sql_query, dialect)
-    transformer.validate_read_only()
-    paginated_query = transformer.add_pagination(limit)
+
+    if schema:
+        transformer.add_where_condition(f"LOWER(schema_name) = LOWER('{schema}')")
+    else:
+        filter_type = db_manager.get_schema_filter_type(database)
+        filtered_schemas = db_manager.get_filtered_schemas(database)
+
+        if filter_type and filtered_schemas:
+            if filter_type == "include":
+                schema_list = "', '".join(s.lower() for s in filtered_schemas)
+                transformer.add_where_condition(
+                    f"LOWER(schema_name) IN ('{schema_list}')"
+                )
+            elif filter_type == "exclude":
+                schema_list = "', '".join(s.lower() for s in filtered_schemas)
+                transformer.add_where_condition(
+                    f"LOWER(schema_name) NOT IN ('{schema_list}')"
+                )
+
+    paginated_query = transformer.add_pagination(limit).validate_read_only().sql()
 
     result = await db_manager.execute_query(database, paginated_query)
     rows = result.fetchall()
@@ -73,7 +89,7 @@ async def fuzzy_search(
     for row in rows:
         row_dict = dict(zip(columns, row))
         typed_rows.append(
-            FuzzySearchRow(
+            SearchRow(
                 object_type=row_dict["object_type"],
                 schema_name=row_dict["schema_name"],
                 user_friendly_descriptor=row_dict["user_friendly_descriptor"],
@@ -81,4 +97,4 @@ async def fuzzy_search(
             )
         )
 
-    return FuzzySearchResponse(rows=typed_rows)
+    return SearchResponse(rows=typed_rows)

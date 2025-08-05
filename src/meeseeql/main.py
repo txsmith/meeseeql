@@ -48,7 +48,7 @@ def find_config_file():
     raise ValueError("Config file not found")
 
 
-def get_db_manager():
+def get_or_init_db_manager():
     """Get or initialize the database manager"""
     global db_manager
     if db_manager is None:
@@ -65,7 +65,7 @@ def show_database_config() -> ToolResult:
     so you can use it to make edits if the user requests it;
     simply edit the config file and call the reload_configt tool.
     """
-    result = tools.show_database_config(get_db_manager())
+    result = tools.show_database_config(get_or_init_db_manager())
     return ToolResult(
         content=[TextContent(type="text", text=str(result))],
         structured_content=result.model_dump(),
@@ -90,7 +90,7 @@ async def execute_query(
         accurate_count: Run COUNT query for exact pagination (default: False, slower but accurate)
     """
     result = await tools.execute_query(
-        get_db_manager(), database, query, limit, page, accurate_count
+        get_or_init_db_manager(), database, query, limit, page, accurate_count
     )
     return ToolResult(
         content=[TextContent(type="text", text=str(result))],
@@ -108,7 +108,7 @@ async def table_summary(
 ) -> ToolResult:
     """Get table structure including columns and foreign keys with pagination"""
     result = await tools.table_summary(
-        get_db_manager(), database, table_name, db_schema, limit, page
+        get_or_init_db_manager(), database, table_name, db_schema, limit, page
     )
     return ToolResult(
         content=[TextContent(type="text", text=str(result))],
@@ -117,22 +117,22 @@ async def table_summary(
 
 
 @mcp.tool()
-async def fuzzy_search(
+async def search(
     database: str,
     search_term: str,
     schema: str | None = None,
 ) -> ToolResult:
-    """Perform fuzzy search across tables, columns, and enum values in a PostgreSQL database.
+    """Perform search across tables, columns, and enum values in a database.
 
     Searches for the given term in table names, column names, and enum values,
     ranking results by relevance with exact matches scoring highest.
 
     Args:
-        database: Database name to search in (must be PostgreSQL)
+        database: Database name to search in
         search_term: A single term to search for across database objects.
         schema: Optional schema to limit search to (default: searches all schemas)
     """
-    result = await tools.fuzzy_search(get_db_manager(), database, search_term, schema)
+    result = await tools.search(get_or_init_db_manager(), database, search_term, schema)
     return ToolResult(
         content=[TextContent(type="text", text=str(result))],
         structured_content=result.model_dump(),
@@ -142,7 +142,7 @@ async def fuzzy_search(
 @mcp.tool()
 async def test_connection(database: str) -> ToolResult:
     """Test database connection, useful for debugging issues"""
-    result = await tools.test_connection(get_db_manager(), database)
+    result = await tools.test_connection(get_or_init_db_manager(), database)
     return ToolResult(
         content=[TextContent(type="text", text=str(result))],
         structured_content=result.model_dump(),
@@ -153,7 +153,7 @@ async def test_connection(database: str) -> ToolResult:
 def reload_config() -> ToolResult:
     """Reload configuration file and report what changed"""
     config_path = find_config_file()
-    result = tools.reload_config(get_db_manager(), config_path)
+    result = tools.reload_config(get_or_init_db_manager(), config_path)
     return ToolResult(
         content=[TextContent(type="text", text=str(result))],
         structured_content=result.model_dump(),
@@ -161,10 +161,7 @@ def reload_config() -> ToolResult:
 
 
 def main():
-    global db_manager
-    config_path = find_config_file()
-    config = load_config(config_path)
-    db_manager = DatabaseManager(config)
+    get_or_init_db_manager()
     mcp.run()
 
 

@@ -149,49 +149,49 @@ class TestAddPagination:
     def test_add_limit_to_query_without_limit(self):
         """Should add LIMIT clause to query that has no existing limit."""
         transformer = SqlQueryTransformer("SELECT * FROM users")
-        result = transformer.add_pagination(limit=10)
+        result = transformer.add_pagination(limit=10).sql()
         assert "LIMIT 10" in result
         assert "users" in result
 
     def test_add_limit_and_offset_to_query_without_limit(self):
         """Should add both LIMIT and OFFSET clauses to query without existing pagination."""
         transformer = SqlQueryTransformer("SELECT * FROM users")
-        result = transformer.add_pagination(limit=10, offset=5)
+        result = transformer.add_pagination(limit=10, offset=5).sql()
         assert "LIMIT 10" in result
         assert "OFFSET 5" in result
 
     def test_replace_higher_existing_limit_with_lower_limit(self):
         """Should replace existing LIMIT when requested limit is more restrictive."""
         transformer = SqlQueryTransformer("SELECT * FROM users LIMIT 100")
-        result = transformer.add_pagination(limit=10)
+        result = transformer.add_pagination(limit=10).sql()
         assert "LIMIT 10" in result
         assert "LIMIT 100" not in result
 
     def test_keep_lower_existing_limit_when_higher_requested(self):
         """Should keep existing LIMIT when it's more restrictive than requested limit."""
         transformer = SqlQueryTransformer("SELECT * FROM users LIMIT 5")
-        result = transformer.add_pagination(limit=10)
+        result = transformer.add_pagination(limit=10).sql()
         assert "LIMIT 5" in result
         assert "LIMIT 10" not in result
 
     def test_update_offset_with_existing_limit(self):
         """Should add OFFSET while preserving existing LIMIT based on policy."""
         transformer = SqlQueryTransformer("SELECT * FROM users LIMIT 10")
-        result = transformer.add_pagination(limit=20, offset=5)
+        result = transformer.add_pagination(limit=20, offset=5).sql()
         assert "LIMIT 10" in result
         assert "OFFSET 5" in result
 
     def test_replace_existing_offset_with_new_offset(self):
         """Should replace existing OFFSET with new offset value."""
         transformer = SqlQueryTransformer("SELECT * FROM users LIMIT 10 OFFSET 20")
-        result = transformer.add_pagination(limit=15, offset=5)
+        result = transformer.add_pagination(limit=15, offset=5).sql()
         assert "OFFSET 5" in result
         assert "OFFSET 20" not in result
 
     def test_zero_offset_not_included_in_output(self):
         """Should not include OFFSET clause when offset is zero."""
         transformer = SqlQueryTransformer("SELECT * FROM users")
-        result = transformer.add_pagination(limit=10, offset=0)
+        result = transformer.add_pagination(limit=10, offset=0).sql()
         assert "LIMIT 10" in result
         assert "OFFSET" not in result
 
@@ -217,7 +217,7 @@ class TestAddPagination:
         ORDER BY u.name
         """
         transformer = SqlQueryTransformer(query)
-        result = transformer.add_pagination(limit=25, offset=10)
+        result = transformer.add_pagination(limit=25, offset=10).sql()
         assert "LIMIT 25" in result
         assert "OFFSET 10" in result
         assert "JOIN" in result
@@ -236,7 +236,7 @@ class TestAddPagination:
         )
         """
         transformer = SqlQueryTransformer(query)
-        result = transformer.add_pagination(limit=10, offset=2)
+        result = transformer.add_pagination(limit=10, offset=2).sql()
 
         # Should add top-level pagination
         assert "LIMIT 10" in result
@@ -269,7 +269,7 @@ class TestAddPagination:
         JOIN top_projects p ON u.project_id = p.id
         """
         transformer = SqlQueryTransformer(query)
-        result = transformer.add_pagination(limit=5)
+        result = transformer.add_pagination(limit=5).sql()
 
         # Should add main query pagination
         assert result.count("LIMIT 5") == 1

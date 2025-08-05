@@ -84,7 +84,6 @@ async def execute_query(
 
     dialect = db_manager.get_dialect_name(database)
     transformer = SqlQueryTransformer(query.strip(), dialect)
-
     transformer.validate_read_only()
 
     total_rows = None
@@ -95,7 +94,7 @@ async def execute_query(
         total_rows = count_row[0] if count_row else 0
 
     offset = (page - 1) * limit
-    paginated_query = transformer.add_pagination(limit=limit, offset=offset)
+    paginated_query = transformer.add_pagination(limit=limit, offset=offset).sql()
 
     result = await db_manager.execute_query(database, paginated_query)
     rows = result.fetchall()

@@ -1,5 +1,6 @@
 import sqlglot
 from sqlglot import expressions as exp
+from typing_extensions import Self
 
 
 class InvalidSqlError(Exception):
@@ -51,32 +52,29 @@ class SqlQueryTransformer:
             is None
         )
 
-    def add_pagination(self, limit: int, offset: int = 0) -> str:
+    def add_pagination(self, limit: int, offset: int = 0) -> Self:
         if limit < 0:
             raise InvalidPaginationError("Limit must be non-negative")
         if offset < 0:
             raise InvalidPaginationError("Offset must be non-negative")
 
         if not isinstance(self.ast, exp.Select):
-            return self.ast.sql(dialect=self.dialect)
+            return self
 
-        ast_copy = self.ast.copy()
-
-        # Check for LIMIT/OFFSET on the top-level query
-        existing_limit = ast_copy.args.get("limit")
-        existing_offset = ast_copy.args.get("offset")
+        existing_limit = self.ast.args.get("limit")
+        existing_offset = self.ast.args.get("offset")
 
         if existing_limit:
             existing_limit_value = int(existing_limit.expression.this)
             if limit < existing_limit_value:
-                ast_copy = ast_copy.limit(limit, copy=False)
+                self.ast = self.ast.limit(limit, copy=False)
         else:
-            ast_copy = ast_copy.limit(limit, copy=False)
+            self.ast = self.ast.limit(limit, copy=False)
 
         if existing_offset or offset > 0:
-            ast_copy = ast_copy.offset(offset, copy=False)
+            self.ast = self.ast.offset(offset, copy=False)
 
-        return ast_copy.sql(dialect=self.dialect)
+        return self
 
     def to_count_query(self) -> str:
         if not isinstance(self.ast, exp.Select):
@@ -95,7 +93,32 @@ class SqlQueryTransformer:
 
         return count_query.sql(dialect=self.dialect)
 
-    def validate_read_only(self) -> None:
-        """Validate that query is read-only, raising exception if not."""
+    def validate_read_only(self) -> Self:
         if not self.is_read_only():
             raise ReadOnlyViolationError("Query contains non-SELECT operations")
+        return self
+
+    def add_where_condition(self, condition: str) -> Self:
+        if not isinstance(self.ast, exp.Select):
+            return self
+
+        try:
+            condition_ast = sqlglot.parse_one(
+                f"SELECT * FROM t WHERE {condition}", dialect=self.dialect
+            )
+            new_condition = condition_ast.find(exp.Where).this
+
+            existing_where = self.ast.find(exp.Where)
+            if existing_where:
+                combined_condition = exp.And(
+                    this=existing_where.this, expression=new_condition
+                )
+                existing_where.set("this", combined_condition)
+            else:
+                self.ast = self.ast.where(new_condition, copy=False)
+            return self
+        except Exception as e:
+            raise InvalidSqlError(f"Failed to add WHERE condition: {e}") from e
+
+    def sql(self) -> str:
+        return self.ast.sql(dialect=self.dialect)

@@ -130,7 +130,7 @@ async def _get_columns(
         transformer = SqlQueryTransformer(base_query, dialect)
         transformer.validate_read_only()
 
-        paginated_query = transformer.add_pagination(limit, offset)
+        paginated_query = transformer.add_pagination(limit, offset).sql()
 
         result = await db_manager.execute_query(database, paginated_query)
         rows = result.fetchall()
@@ -179,7 +179,7 @@ async def _get_foreign_keys(
         transformer = SqlQueryTransformer(base_query, dialect)
         transformer.validate_read_only()
 
-        paginated_query = transformer.add_pagination(limit, offset)
+        paginated_query = transformer.add_pagination(limit, offset).sql()
 
         result = await db_manager.execute_query(database, paginated_query)
         rows = result.fetchall()

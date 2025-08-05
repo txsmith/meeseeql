@@ -45,3 +45,61 @@ def test_duplicate_database_names():
             },
             settings={},
         )
+
+
+def test_both_include_and_exclude_schemas():
+    with raises(
+        ConfigurationError,
+        match="Cannot specify both include_schemas and exclude_schemas",
+    ):
+        DatabaseConfig(
+            type="postgresql",
+            description="Test DB",
+            host="localhost",
+            database="testdb",
+            username="user",
+            password="pass",
+            include_schemas=["public", "app"],
+            exclude_schemas=["temp", "log"],
+        )
+
+
+def test_include_schemas_only():
+    config = DatabaseConfig(
+        type="postgresql",
+        description="Test DB",
+        host="localhost",
+        database="testdb",
+        username="user",
+        password="pass",
+        include_schemas=["public", "app"],
+    )
+    assert config.include_schemas == ["public", "app"]
+    assert config.exclude_schemas is None
+
+
+def test_exclude_schemas_only():
+    config = DatabaseConfig(
+        type="postgresql",
+        description="Test DB",
+        host="localhost",
+        database="testdb",
+        username="user",
+        password="pass",
+        exclude_schemas=["temp", "log"],
+    )
+    assert config.exclude_schemas == ["temp", "log"]
+    assert config.include_schemas is None
+
+
+def test_no_schema_filtering():
+    config = DatabaseConfig(
+        type="postgresql",
+        description="Test DB",
+        host="localhost",
+        database="testdb",
+        username="user",
+        password="pass",
+    )
+    assert config.include_schemas is None
+    assert config.exclude_schemas is None

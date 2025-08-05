@@ -45,7 +45,7 @@ This is an MCP (Model Context Protocol) server for exploring SQL databases. The 
 - **`sql_transformer.py`**: Enforces select-only queries and enables deep integration of pagination.
 - **`tools/`**: Business logic modules for each MCP tool:
   - `show_database_config.py` - List configured databases
-  - `fuzzy_search.py` - Fuzzy find tables, columns and enums
+  - `search.py` - Search for tables, columns and enums
   - `table_summary.py` - Get table schema, sample rows and foreign keys
   - `execute_query.py` - Execute SELECT queries 
 

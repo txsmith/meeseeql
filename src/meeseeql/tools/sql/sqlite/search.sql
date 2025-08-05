@@ -15,9 +15,6 @@ FROM sqlite_master
 WHERE type = 'table'
   AND name NOT LIKE 'sqlite_%'
   AND (LOWER(name) LIKE LOWER('%{{search_term}}%'))
-  AND (
-    '{{schema_filter}}' = '' OR 'main' = '{{schema_filter}}'
-  )
 ORDER BY
   ranking_score DESC,
   name ASC

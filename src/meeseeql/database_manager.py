@@ -44,12 +44,19 @@ class DatabaseConfig(BaseModel):
 
     extra_params: Dict[str, str] | None = None
 
+    include_schemas: List[str] | None = None
+    exclude_schemas: List[str] | None = None
+
     @model_validator(mode="after")
     def validate_config(self):
-        # Validate supported database types
         supported_types = {"postgresql", "mysql", "sqlserver", "snowflake", "sqlite"}
         if self.type not in supported_types:
             raise ConfigurationError(f"Unsupported database type: {self.type}")
+
+        if self.include_schemas is not None and self.exclude_schemas is not None:
+            raise ConfigurationError(
+                "Cannot specify both include_schemas and exclude_schemas"
+            )
 
         # If using connection string, no further validation needed
         if self.connection_string:
@@ -218,6 +225,30 @@ class DatabaseManager:
             "snowflake": "PUBLIC",
         }
         return default_schemas.get(dialect, "public")
+
+    def get_filtered_schemas(self, db_name: str) -> List[str] | None:
+        db_config = self.get_database_config(db_name)
+        if not db_config:
+            return None
+
+        if db_config.include_schemas:
+            return db_config.include_schemas
+        elif db_config.exclude_schemas:
+            return db_config.exclude_schemas
+        else:
+            return None
+
+    def get_schema_filter_type(self, db_name: str) -> str | None:
+        db_config = self.get_database_config(db_name)
+        if not db_config:
+            return None
+
+        if db_config.include_schemas:
+            return "include"
+        elif db_config.exclude_schemas:
+            return "exclude"
+        else:
+            return None
 
     def reload_config(self, new_config: AppConfig, changed_db_names: set[str]):
         for db_name in changed_db_names:

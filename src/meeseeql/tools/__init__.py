@@ -3,7 +3,7 @@ from meeseeql.tools.execute_query import execute_query
 from meeseeql.tools.table_summary import table_summary
 from meeseeql.tools.test_connection import test_connection
 from meeseeql.tools.reload_config import reload_config
-from meeseeql.tools.fuzzy_search import fuzzy_search
+from meeseeql.tools.search import search
 
 __all__ = [
     "show_database_config",
@@ -11,5 +11,5 @@ __all__ = [
     "table_summary",
     "test_connection",
     "reload_config",
-    "fuzzy_search",
+    "search",
 ]
