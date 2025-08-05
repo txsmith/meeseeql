@@ -74,5 +74,4 @@ databases:
 settings:
   max_query_timeout: 30
   max_rows_per_query: 500
-  sample_size: 10
   enable_write_operations: false

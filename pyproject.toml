@@ -1,9 +1,9 @@
 [project]
 name = "meeseeql"
-version = "0.1.0"
+version = "1.0.0"
 description = "A FastMCP server for exploring SQL databases"
 
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 
 authors = [
     { name = "Thomas Smith", email = "thomas@apolloagriculture.com" },

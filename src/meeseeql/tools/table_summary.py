@@ -22,6 +22,7 @@ class ColumnInfo(BaseModel):
     nullable: bool
     default: Any = None
     primary_key: bool = False
+    enum_values: str | None = None
 
 
 class ForeignKey(BaseModel):
@@ -54,6 +55,8 @@ class TableSummary(BaseModel):
                     parts.insert(-1, "PRIMARY KEY")
                 if col.default is not None:
                     parts.append(f"default: {col.default}")
+                if col.enum_values:
+                    parts.append(f"values: {col.enum_values}")
                 result += f"  {col.name}: {', '.join(parts)}\n"
 
         if self.sample_rows:
@@ -64,7 +67,13 @@ class TableSummary(BaseModel):
                 result += f"  {'-' * (len(' | '.join(column_names)))}\n"
                 for row in self.sample_rows:
                     row_str = " | ".join(
-                        str(val) if val is not None else "NULL" for val in row
+                        (
+                            # Truncate column values to 50 chars to prevent massive overflow
+                            str(val)[:50] + ("..." if len(str(val)) > 50 else "")
+                            if val is not None
+                            else "NULL"
+                        )
+                        for val in row
                     )
                     result += f"  {row_str}\n"
 
@@ -84,6 +93,29 @@ class TableSummary(BaseModel):
 
         result += f"\nPage {self.current_page} of {self.total_pages} (Total: {self.total_count} items)"
         return result
+
+
+async def _get_enum_values(
+    db_manager: DatabaseManager,
+    database: str,
+    table_name: str,
+    db_schema: str,
+) -> dict[str, str]:
+    try:
+        dialect = db_manager.get_dialect_name(database)
+        enum_query_template = load_sql_query(dialect, "enum_values")
+        enum_query = enum_query_template.replace("{{table_name}}", table_name).replace(
+            "{{schema_name}}", db_schema
+        )
+
+        transformer = SqlQueryTransformer(enum_query, dialect)
+        transformer.validate_read_only()
+
+        result = await db_manager.execute_query(database, enum_query)
+        rows = result.fetchall()
+        return {row[0]: row[1] for row in rows if row[0] and row[1]}
+    except Exception:
+        return {}
 
 
 async def _get_primary_keys(
@@ -117,6 +149,7 @@ async def _get_columns(
     table_name: str,
     db_schema: str,
     primary_keys: set,
+    enum_values: dict[str, str],
     limit: int,
     offset: int,
 ) -> List[ColumnInfo]:
@@ -152,6 +185,7 @@ async def _get_columns(
                     nullable=nullable,
                     default=column_default,
                     primary_key=is_primary_key,
+                    enum_values=enum_values.get(column_name),
                 )
             )
         return columns
@@ -365,12 +399,13 @@ async def table_summary(
         db_manager, database, table_name, schema_value
     )
 
-    sample_size = db_manager.config.settings.get("sample_size", 5)
+    enum_values = await _get_enum_values(db_manager, database, table_name, schema_value)
+
     sample_response = await execute_query(
         db_manager,
         database,
         f"SELECT * FROM {schema_value}.{table_name}",
-        limit=sample_size,
+        limit=5,
         page=1,
     )
     sample_rows = [list(row.values()) for row in sample_response.rows]
@@ -386,6 +421,7 @@ async def table_summary(
             table_name,
             schema_value,
             primary_keys,
+            enum_values,
             num_columns_to_fetch,
             current_offset,
         )

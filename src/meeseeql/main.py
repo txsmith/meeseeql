@@ -103,10 +103,18 @@ async def table_summary(
     database: str,
     table_name: str,
     db_schema: str | None = None,
-    limit: int = 250,
+    limit: int = 100,
     page: int = 1,
 ) -> ToolResult:
-    """Get table structure including columns and foreign keys with pagination"""
+    """Get table structure including columns and foreign keys with pagination
+
+    Args:
+        database: Database name to query
+        table_name: Name of the table to summarize
+        db_schema: Optional schema name (uses default schema if not provided)
+        limit: Maximum items per page (default: 100)
+        page: Page number (default: 1)
+    """
     result = await tools.table_summary(
         get_or_init_db_manager(), database, table_name, db_schema, limit, page
     )
