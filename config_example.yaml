@@ -1,77 +1,35 @@
 databases:
-  # Option 1: Use connection string (existing format)
-  chinook:
-    type: sqlite
-    connection_string: "sqlite:///tests/Chinook_Sqlite.sqlite"
-    description: "Chinook sample SQLite database"
-
-  # Option 2: Use individual fields (new format)
-  my_postgres:
-    type: postgresql
-    description: "PostgreSQL database with individual fields"
-    host: localhost
-    port: 5432
-    database: mydb
-    username: myuser
-    password: mypassword
-    extra_params:
-      sslmode: require
-      connect_timeout: "10"
-
-  # Examples using password store (pass) integration
-  prod_postgres:
-    type: postgresql
-    description: "Production PostgreSQL using default pass key"
-    host: prod-db.example.com
-    port: 5432
-    database: myapp
-    username: app_user
-    # No password field - will use pass entry: databases/prod_postgres
-
-  dev_postgres:
-    type: postgresql
-    description: "Development PostgreSQL using custom pass key"
-    host: dev-db.example.com
-    port: 5432
-    database: dev_myapp
-    username: dev_user
-    password_store_key: "company/dev/postgres"
-    # Will use pass entry: company/dev/postgres
-
-  memory_sqlite:
-    type: sqlite
-    description: "In-memory SQLite for testing"
-    database: ":memory:"
-
-  snowflake_example:
-    type: snowflake
-    description: "Snowflake data warehouse"
-    host: "myaccount.snowflakecomputing.com"
-    port: 443
-    database: "PROD_DWH"
-    username: "myuser@example.com"
-    password: "mypassword"
-    account: "myaccount"
-    extra_params:
-      warehouse: "COMPUTE_WH"
-      schema: "PUBLIC"
-      authenticator: "externalbrowser"
-
-  # Schema filtering examples
-  staging_postgres:
-    type: postgresql
+  example_db: # the identifier used in all MCP tool calls
+    type: postgresql # supported: postgresql, mysql, sqlite, sqlserver, snowflake
+    
+    description: "Example database showing all configuration options" # Human readable description useful for the LLM
+    
+    # Either use connection_string of individual connection parameters
+    connection_string: "postgresql://app_user:secure_password@db.example.com:5432/myapp_db"
     host: db.example.com
     port: 5432
-    exclude_schemas: ["archived", "analytics_cache", "temp"]
+    database: myapp_db
+    username: app_user
+    account: my_account # For Snowflake
+    password: secure_password # Omit to fetch the credentials from the password manager
+    
+    # Password management via 'pass' tool (alternative to password field)
+    password_store_key: "company/databases/example_db"  # Custom pass key, defaults to: databases/example_db
+    
+    # Database-specific parameters
+    extra_params:
+      sslmode: require
+      application_name: "mcp-sql-server"
+    
+    # Schema filtering (choose one)
+    include_schemas: ["public", "analytics", "reports"]  # Only these schemas
+    exclude_schemas: ["temp", "staging", "logs"]         # All except these schemas
+    
+    # Table filtering (choose one) 
+    allowed_tables: ["users", "orders", "products", "analytics_summary"]  # Only these tables
+    disallowed_tables: ["sensitive_data", "audit_logs", "temp_tables"]    # All except these tables
 
-  dwh_snowflake:
-    type: snowflake
-    host: "myaccount.snowflakecomputing.com"
-    database: "PROD_DWH"
-    include_schemas: ["SALES", "MARKETING", "FINANCE", "OPERATIONS"]
-
-# Global settings
+# Global MCP server settings
 settings:
-  max_query_timeout: 30
-  max_rows_per_query: 500
-  enable_write_operations: false
+  max_query_timeout: 30 # Maximum time in seconds for any single query
+  max_rows_per_query: 1000 # Maximum rows returned per query (pagination will apply)

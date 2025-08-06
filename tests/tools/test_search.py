@@ -1,5 +1,10 @@
 import pytest
-from meeseeql.database_manager import load_config, DatabaseManager
+from meeseeql.database_manager import (
+    load_config,
+    DatabaseManager,
+    DatabaseConfig,
+    AppConfig,
+)
 from meeseeql.tools.search import search
 
 
@@ -67,3 +72,71 @@ async def test_search_case_insensitive(db_manager):
 
     assert len(result_lower.rows) == len(result_upper.rows) == len(result_mixed.rows)
     assert len(result_lower.rows) > 0
+
+
+async def test_search_respects_allowed_tables():
+    config = AppConfig(
+        databases={
+            "test_db": DatabaseConfig(
+                type="sqlite",
+                connection_string="sqlite:///tests/Chinook_Sqlite.sqlite",
+                description="Test DB with table inclusion",
+                allowed_tables=["Track", "Album"],
+            )
+        },
+        settings={},
+    )
+    db_manager = DatabaseManager(config)
+
+    result = await search(db_manager, "test_db", "a")
+
+    # Should only return results from Track and Album tables, not Artist or other tables
+    table_results = [r for r in result.rows if r.object_type == "table"]
+    table_names = [
+        (
+            r.user_friendly_descriptor.split(".")[1]
+            if "." in r.user_friendly_descriptor
+            else r.user_friendly_descriptor
+        )
+        for r in table_results
+    ]
+
+    for table_name in table_names:
+        assert table_name.lower() in [
+            "track",
+            "album",
+        ], f"Found disallowed table: {table_name}"
+
+
+async def test_search_respects_disallowed_tables():
+    config = AppConfig(
+        databases={
+            "test_db": DatabaseConfig(
+                type="sqlite",
+                connection_string="sqlite:///tests/Chinook_Sqlite.sqlite",
+                description="Test DB with table exclusion",
+                disallowed_tables=["Track", "Album"],
+            )
+        },
+        settings={},
+    )
+    db_manager = DatabaseManager(config)
+
+    result = await search(db_manager, "test_db", "a")
+
+    # Should not return Track or Album tables
+    table_results = [r for r in result.rows if r.object_type == "table"]
+    table_names = [
+        (
+            r.user_friendly_descriptor.split(".")[1]
+            if "." in r.user_friendly_descriptor
+            else r.user_friendly_descriptor
+        )
+        for r in table_results
+    ]
+
+    for table_name in table_names:
+        assert table_name.lower() not in [
+            "track",
+            "album",
+        ], f"Found excluded table: {table_name}"

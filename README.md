@@ -85,7 +85,7 @@ Add to your MCP settings in Cursor:
 
 ```json
 {
-  "meeseeql": {
+  "sql-explorer": {
     "command": "uvx", 
     "args": ["meeseeql"]
   }

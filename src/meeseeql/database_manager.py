@@ -27,25 +27,19 @@ class QueryError(Exception):
 class DatabaseConfig(BaseModel):
     type: str
     description: str
-
-    # Option 1: Use connection string directly
     connection_string: str | None = None
-
-    # Option 2: Use individual fields
     host: str | None = None
     port: int | None = None
     database: str | None = None
     username: str | None = None
     password: str | None = None
     account: str | None = None  # For Snowflake
-
-    # Custom password store key (overrides default databases/{db_name})
     password_store_key: str | None = None
-
     extra_params: Dict[str, str] | None = None
-
     include_schemas: List[str] | None = None
     exclude_schemas: List[str] | None = None
+    allowed_tables: List[str] | None = None
+    disallowed_tables: List[str] | None = None
 
     @model_validator(mode="after")
     def validate_config(self):
@@ -56,6 +50,11 @@ class DatabaseConfig(BaseModel):
         if self.include_schemas is not None and self.exclude_schemas is not None:
             raise ConfigurationError(
                 "Cannot specify both include_schemas and exclude_schemas"
+            )
+
+        if self.allowed_tables is not None and self.disallowed_tables is not None:
+            raise ConfigurationError(
+                "Cannot specify both allowed_tables and disallowed_tables"
             )
 
         # If using connection string, no further validation needed
@@ -238,6 +237,18 @@ class DatabaseManager:
         else:
             return None
 
+    def get_filtered_tables(self, db_name: str) -> List[str] | None:
+        db_config = self.get_database_config(db_name)
+        if not db_config:
+            return None
+
+        if db_config.allowed_tables:
+            return db_config.allowed_tables
+        elif db_config.disallowed_tables:
+            return db_config.disallowed_tables
+        else:
+            return None
+
     def get_schema_filter_type(self, db_name: str) -> str | None:
         db_config = self.get_database_config(db_name)
         if not db_config:
@@ -247,6 +258,18 @@ class DatabaseManager:
             return "include"
         elif db_config.exclude_schemas:
             return "exclude"
+        else:
+            return None
+
+    def get_table_filter_type(self, db_name: str) -> str | None:
+        db_config = self.get_database_config(db_name)
+        if not db_config:
+            return None
+
+        if db_config.allowed_tables:
+            return "allow"
+        elif db_config.disallowed_tables:
+            return "deny"
         else:
             return None
 

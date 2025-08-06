@@ -349,6 +349,43 @@ async def _check_table_exists(
         ) from e
 
 
+async def _validate_table_summary_inputs(
+    db_manager: DatabaseManager,
+    database: str,
+    table_name: str,
+    db_schema: str | None,
+    limit: int,
+    page: int,
+) -> str:
+    """Validate inputs and return the schema value to use"""
+    if limit < 1:
+        raise TableSummaryError("Limit must be greater than 0")
+
+    if page < 1:
+        raise TableSummaryError("Page number must be greater than 0")
+
+    table_filter_type = db_manager.get_table_filter_type(database)
+    filtered_tables = db_manager.get_filtered_tables(database)
+
+    if table_filter_type and filtered_tables:
+        if table_filter_type == "allow":
+            if table_name.lower() not in [t.lower() for t in filtered_tables]:
+                raise TableNotFoundError(
+                    f"Table '{table_name}' is not in the allowed list"
+                )
+        elif table_filter_type == "deny":
+            if table_name.lower() in [t.lower() for t in filtered_tables]:
+                raise TableNotFoundError(f"Table '{table_name}' is in the exluded list")
+
+    table_exists = await _check_table_exists(
+        db_manager, database, table_name, db_schema
+    )
+    if not table_exists:
+        raise TableNotFoundError(
+            f"Table '{table_name}' not found in database '{database}'"
+        )
+
+
 async def table_summary(
     db_manager: DatabaseManager,
     database: str,
@@ -357,30 +394,21 @@ async def table_summary(
     limit: int = 250,
     page: int = 1,
 ) -> TableSummary:
-    if limit < 1:
-        raise TableSummaryError("Limit must be greater than 0")
-
-    if page < 1:
-        raise TableSummaryError("Page number must be greater than 0")
-
-    max_rows = db_manager.config.settings.get("max_rows_per_query", 1000)
-    if limit > max_rows:
-        limit = max_rows
-
-    dialect = db_manager.get_dialect_name(database)
 
     if not db_schema:
         schema_value = db_manager.get_default_schema(database)
     else:
         schema_value = db_schema
 
-    table_exists = await _check_table_exists(
-        db_manager, database, table_name, schema_value
+    await _validate_table_summary_inputs(
+        db_manager, database, table_name, schema_value, limit, page
     )
-    if not table_exists:
-        raise TableNotFoundError(
-            f"Table '{table_name}' not found in database '{database}'"
-        )
+
+    max_rows = db_manager.config.settings.get("max_rows_per_query", 1000)
+    if limit > max_rows:
+        limit = max_rows
+
+    dialect = db_manager.get_dialect_name(database)
 
     column_count, outgoing_fk_count, incoming_fk_count = await _get_counts(
         db_manager, database, table_name, schema_value
