@@ -103,3 +103,61 @@ def test_no_schema_filtering():
     )
     assert config.include_schemas is None
     assert config.exclude_schemas is None
+
+
+def test_both_allowed_and_disallowed_tables():
+    with raises(
+        ConfigurationError,
+        match="Cannot specify both allowed_tables and disallowed_tables",
+    ):
+        DatabaseConfig(
+            type="postgresql",
+            description="Test DB",
+            host="localhost",
+            database="testdb",
+            username="user",
+            password="pass",
+            allowed_tables=["users", "products"],
+            disallowed_tables=["logs", "temp"],
+        )
+
+
+def test_allowed_tables_only():
+    config = DatabaseConfig(
+        type="postgresql",
+        description="Test DB",
+        host="localhost",
+        database="testdb",
+        username="user",
+        password="pass",
+        allowed_tables=["users", "products"],
+    )
+    assert config.allowed_tables == ["users", "products"]
+    assert config.disallowed_tables is None
+
+
+def test_disallowed_tables_only():
+    config = DatabaseConfig(
+        type="postgresql",
+        description="Test DB",
+        host="localhost",
+        database="testdb",
+        username="user",
+        password="pass",
+        disallowed_tables=["logs", "temp"],
+    )
+    assert config.disallowed_tables == ["logs", "temp"]
+    assert config.allowed_tables is None
+
+
+def test_no_table_filtering():
+    config = DatabaseConfig(
+        type="postgresql",
+        description="Test DB",
+        host="localhost",
+        database="testdb",
+        username="user",
+        password="pass",
+    )
+    assert config.allowed_tables is None
+    assert config.disallowed_tables is None

@@ -23,7 +23,7 @@ class SearchResponse(BaseModel):
         result = ""
 
         for row in self.rows:
-            if row.data_type == "table":
+            if row.object_type == "table":
                 result += f"{row.object_type}: {row.user_friendly_descriptor}\n"
             elif row.data_type and row.data_type != "null":
                 result += f"{row.object_type}: {row.user_friendly_descriptor} ({row.data_type}) in {row.schema_name}\n"
@@ -45,6 +45,50 @@ class SearchResponse(BaseModel):
             return str(value)
 
 
+def _apply_search_filters(
+    transformer: SqlQueryTransformer,
+    db_manager: DatabaseManager,
+    database: str,
+    dialect: str,
+    schema: str | None,
+) -> None:
+    """Apply schema and table filters to the search query"""
+    if schema:
+        transformer.add_where_condition(f"LOWER(schema_name) = LOWER('{schema}')")
+    else:
+        schema_filter_type = db_manager.get_schema_filter_type(database)
+        filtered_schemas = db_manager.get_filtered_schemas(database)
+
+        if schema_filter_type and filtered_schemas:
+            if schema_filter_type == "include":
+                schema_list = "', '".join(s.lower() for s in filtered_schemas)
+                transformer.add_where_condition(
+                    f"LOWER(schema_name) IN ('{schema_list}')"
+                )
+            elif schema_filter_type == "exclude":
+                schema_list = "', '".join(s.lower() for s in filtered_schemas)
+                transformer.add_where_condition(
+                    f"LOWER(schema_name) NOT IN ('{schema_list}')"
+                )
+
+    table_filter_type = db_manager.get_table_filter_type(database)
+    filtered_tables = db_manager.get_filtered_tables(database)
+
+    if table_filter_type and filtered_tables:
+        table_column = "name" if dialect == "sqlite" else "object_name"
+
+        if table_filter_type == "allow":
+            table_list = "', '".join(t.lower() for t in filtered_tables)
+            transformer.add_where_condition(
+                f"LOWER({table_column}) IN ('{table_list}') OR object_type != 'table'"
+            )
+        elif table_filter_type == "deny":
+            table_list = "', '".join(t.lower() for t in filtered_tables)
+            transformer.add_where_condition(
+                f"LOWER({table_column}) NOT IN ('{table_list}') OR object_type != 'table'"
+            )
+
+
 async def search(
     db_manager: DatabaseManager,
     database: str,
@@ -61,23 +105,7 @@ async def search(
 
     transformer = SqlQueryTransformer(sql_query, dialect)
 
-    if schema:
-        transformer.add_where_condition(f"LOWER(schema_name) = LOWER('{schema}')")
-    else:
-        filter_type = db_manager.get_schema_filter_type(database)
-        filtered_schemas = db_manager.get_filtered_schemas(database)
-
-        if filter_type and filtered_schemas:
-            if filter_type == "include":
-                schema_list = "', '".join(s.lower() for s in filtered_schemas)
-                transformer.add_where_condition(
-                    f"LOWER(schema_name) IN ('{schema_list}')"
-                )
-            elif filter_type == "exclude":
-                schema_list = "', '".join(s.lower() for s in filtered_schemas)
-                transformer.add_where_condition(
-                    f"LOWER(schema_name) NOT IN ('{schema_list}')"
-                )
+    _apply_search_filters(transformer, db_manager, database, dialect, schema)
 
     paginated_query = transformer.add_pagination(limit).validate_read_only().sql()
 

@@ -6,9 +6,11 @@ from meeseeql.database_manager import (
     load_config,
     DatabaseManager,
     QueryError,
+    DatabaseConfig,
+    AppConfig,
 )
 from meeseeql.tools.execute_query import execute_query, QueryResponse
-from meeseeql.sql_transformer import ReadOnlyViolationError
+from meeseeql.sql_transformer import ReadOnlyViolationError, TableAccessError
 
 
 @pytest.fixture
@@ -217,3 +219,51 @@ async def test_execute_query_accurate_count_complex_query(db_manager):
         assert result.total_pages == math.ceil(result.total_rows / 5)
     else:
         assert result.total_pages == 1
+
+
+async def test_execute_query_respects_allowed_tables():
+    config = AppConfig(
+        databases={
+            "test_db": DatabaseConfig(
+                type="sqlite",
+                connection_string="sqlite:///tests/Chinook_Sqlite.sqlite",
+                description="Test DB with table inclusion",
+                allowed_tables=["Track", "Album"],
+            )
+        },
+        settings={},
+    )
+    db_manager = DatabaseManager(config)
+
+    # Should work for allowed table
+    result = await execute_query(db_manager, "test_db", "SELECT * FROM Track LIMIT 5")
+    assert isinstance(result, QueryResponse)
+    assert len(result.columns) > 0
+
+    # Should raise error for disallowed table
+    with pytest.raises(TableAccessError, match="not in the allowed list"):
+        await execute_query(db_manager, "test_db", "SELECT * FROM Artist LIMIT 5")
+
+
+async def test_execute_query_respects_disallowed_tables():
+    config = AppConfig(
+        databases={
+            "test_db": DatabaseConfig(
+                type="sqlite",
+                connection_string="sqlite:///tests/Chinook_Sqlite.sqlite",
+                description="Test DB with table exclusion",
+                disallowed_tables=["Track", "Album"],
+            )
+        },
+        settings={},
+    )
+    db_manager = DatabaseManager(config)
+
+    # Should work for non-excluded table
+    result = await execute_query(db_manager, "test_db", "SELECT * FROM Artist LIMIT 5")
+    assert isinstance(result, QueryResponse)
+    assert len(result.columns) > 0
+
+    # Should raise error for excluded table
+    with pytest.raises(TableAccessError, match="in the excluded list"):
+        await execute_query(db_manager, "test_db", "SELECT * FROM Track LIMIT 5")

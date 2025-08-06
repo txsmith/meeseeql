@@ -1,5 +1,6 @@
 import sqlglot
 from sqlglot import expressions as exp
+from typing import List
 from typing_extensions import Self
 
 
@@ -12,6 +13,10 @@ class ReadOnlyViolationError(Exception):
 
 
 class InvalidPaginationError(Exception):
+    pass
+
+
+class TableAccessError(Exception):
     pass
 
 
@@ -119,6 +124,44 @@ class SqlQueryTransformer:
             return self
         except Exception as e:
             raise InvalidSqlError(f"Failed to add WHERE condition: {e}") from e
+
+    def _extract_table_names(self) -> List[str]:
+        table_names = []
+
+        for table_node in self.ast.find_all(exp.Table):
+            table_name = table_node.name
+            if table_name:
+                table_names.append(table_name.lower())
+
+        return list(set(table_names))
+
+    def validate_table_access(
+        self,
+        allowed_tables: List[str] | None = None,
+        disallowed_tables: List[str] | None = None,
+    ) -> Self:
+        if not allowed_tables and not disallowed_tables:
+            return self
+
+        table_names = self._extract_table_names()
+
+        if allowed_tables:
+            allowed_tables_lower = [t.lower() for t in allowed_tables]
+            for table_name in table_names:
+                if table_name not in allowed_tables_lower:
+                    raise TableAccessError(
+                        f"Table '{table_name}' is not in the allowed list"
+                    )
+
+        if disallowed_tables:
+            disallowed_tables_lower = [t.lower() for t in disallowed_tables]
+            for table_name in table_names:
+                if table_name in disallowed_tables_lower:
+                    raise TableAccessError(
+                        f"Table '{table_name}' is in the excluded list"
+                    )
+
+        return self
 
     def sql(self) -> str:
         return self.ast.sql(dialect=self.dialect)

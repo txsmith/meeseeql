@@ -4,6 +4,8 @@ import pytest
 from meeseeql.database_manager import (
     load_config,
     DatabaseManager,
+    DatabaseConfig,
+    AppConfig,
 )
 from meeseeql.tools.table_summary import (
     table_summary,
@@ -150,3 +152,49 @@ async def test_table_summary_case_insensitive(db_manager):
     # Test that non-existent table still raises error
     with pytest.raises(TableNotFoundError):
         await table_summary(db_manager, "chinook_sqlite", "nonexistenttable")
+
+
+async def test_table_summary_respects_allowed_tables():
+    config = AppConfig(
+        databases={
+            "test_db": DatabaseConfig(
+                type="sqlite",
+                connection_string="sqlite:///tests/Chinook_Sqlite.sqlite",
+                description="Test DB with table inclusion",
+                allowed_tables=["Track", "Album"],
+            )
+        },
+        settings={},
+    )
+    db_manager = DatabaseManager(config)
+
+    # Should work for allowed table
+    result = await table_summary(db_manager, "test_db", "Track")
+    assert result.table == "main.Track"
+
+    # Should raise error for disallowed table
+    with pytest.raises(TableNotFoundError, match="not in the allowed list"):
+        await table_summary(db_manager, "test_db", "Artist")
+
+
+async def test_table_summary_respects_disallowed_tables():
+    config = AppConfig(
+        databases={
+            "test_db": DatabaseConfig(
+                type="sqlite",
+                connection_string="sqlite:///tests/Chinook_Sqlite.sqlite",
+                description="Test DB with table exclusion",
+                disallowed_tables=["Track", "Album"],
+            )
+        },
+        settings={},
+    )
+    db_manager = DatabaseManager(config)
+
+    # Should work for non-excluded table
+    result = await table_summary(db_manager, "test_db", "Artist")
+    assert result.table == "main.Artist"
+
+    # Should raise error for excluded table
+    with pytest.raises(TableNotFoundError, match="exluded list"):
+        await table_summary(db_manager, "test_db", "Track")

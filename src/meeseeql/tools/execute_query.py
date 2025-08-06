@@ -2,7 +2,7 @@ import math
 from typing import Dict, Any, List
 from pydantic import BaseModel
 from meeseeql.database_manager import DatabaseManager
-from meeseeql.sql_transformer import SqlQueryTransformer
+from meeseeql.sql_transformer import SqlQueryTransformer, TableAccessError
 
 
 class QueryResponse(BaseModel):
@@ -85,6 +85,14 @@ async def execute_query(
     dialect = db_manager.get_dialect_name(database)
     transformer = SqlQueryTransformer(query.strip(), dialect)
     transformer.validate_read_only()
+
+    table_filter_type = db_manager.get_table_filter_type(database)
+    filtered_tables = db_manager.get_filtered_tables(database)
+
+    if table_filter_type == "allow":
+        transformer.validate_table_access(allowed_tables=filtered_tables)
+    elif table_filter_type == "deny":
+        transformer.validate_table_access(disallowed_tables=filtered_tables)
 
     total_rows = None
     if accurate_count:
