@@ -58,7 +58,6 @@ def get_or_init_db_manager():
     return db_manager
 
 
-@mcp.tool()
 def show_database_config() -> ToolResult:
     """List all configured databases and their settings.
     This tool also gives you the full path to the config file
@@ -72,7 +71,6 @@ def show_database_config() -> ToolResult:
     )
 
 
-@mcp.tool()
 async def execute_query(
     database: str,
     query: str,
@@ -98,7 +96,6 @@ async def execute_query(
     )
 
 
-@mcp.tool()
 async def table_summary(
     database: str,
     table_name: str,
@@ -124,7 +121,6 @@ async def table_summary(
     )
 
 
-@mcp.tool()
 async def search(
     database: str,
     search_term: str,
@@ -147,7 +143,6 @@ async def search(
     )
 
 
-@mcp.tool()
 async def test_connection(database: str) -> ToolResult:
     """Test database connection, useful for debugging issues"""
     result = await tools.test_connection(get_or_init_db_manager(), database)
@@ -157,7 +152,6 @@ async def test_connection(database: str) -> ToolResult:
     )
 
 
-@mcp.tool()
 def reload_config() -> ToolResult:
     """Reload configuration file and report what changed"""
     config_path = find_config_file()
@@ -168,8 +162,29 @@ def reload_config() -> ToolResult:
     )
 
 
+def register_tools():
+    available_tools = get_or_init_db_manager().get_available_tools()
+
+    mcp.tool()(show_database_config)
+
+    if available_tools is None or "execute_query" in available_tools:
+        mcp.tool()(execute_query)
+
+    if available_tools is None or "table_summary" in available_tools:
+        mcp.tool()(table_summary)
+
+    if available_tools is None or "search" in available_tools:
+        mcp.tool()(search)
+
+    if available_tools is None or "test_connection" in available_tools:
+        mcp.tool()(test_connection)
+
+    if available_tools is None or "reload_config" in available_tools:
+        mcp.tool()(reload_config)
+
+
 def main():
-    get_or_init_db_manager()
+    register_tools()
     mcp.run()
 
 

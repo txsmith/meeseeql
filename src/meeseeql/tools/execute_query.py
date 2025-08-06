@@ -2,7 +2,7 @@ import math
 from typing import Dict, Any, List
 from pydantic import BaseModel
 from meeseeql.database_manager import DatabaseManager
-from meeseeql.sql_transformer import SqlQueryTransformer, TableAccessError
+from meeseeql.sql_transformer import SqlQueryTransformer
 
 
 class QueryResponse(BaseModel):
@@ -78,9 +78,7 @@ async def execute_query(
     if page < 1:
         raise ValueError("Page number must be greater than 0")
 
-    max_rows = db_manager.config.settings.get("max_rows_per_query", 1000)
-    if limit > max_rows:
-        limit = max_rows
+    limit = min(limit, db_manager.config.settings.max_rows_per_query)
 
     dialect = db_manager.get_dialect_name(database)
     transformer = SqlQueryTransformer(query.strip(), dialect)

@@ -404,9 +404,7 @@ async def table_summary(
         db_manager, database, table_name, schema_value, limit, page
     )
 
-    max_rows = db_manager.config.settings.get("max_rows_per_query", 1000)
-    if limit > max_rows:
-        limit = max_rows
+    limit = min(limit, db_manager.config.settings.max_rows_per_query)
 
     dialect = db_manager.get_dialect_name(database)
 

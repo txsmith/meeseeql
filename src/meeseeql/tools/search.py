@@ -99,7 +99,7 @@ async def search(
 
     sql_template = load_sql_query(dialect, "search")
 
-    limit = min(250, db_manager.config.settings.get("max_rows_per_query", 250))
+    limit = min(250, db_manager.config.settings.max_rows_per_query)
 
     sql_query = sql_template.replace("{{search_term}}", search_term)
 

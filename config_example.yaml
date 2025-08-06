@@ -31,5 +31,9 @@ databases:
 
 # Global MCP server settings
 settings:
-  max_query_timeout: 30 # Maximum time in seconds for any single query
-  max_rows_per_query: 1000 # Maximum rows returned per query (pagination will apply)
+  max_query_timeout: 30     # Maximum time in seconds for any single query
+  max_rows_per_query: 1000  # Maximum rows returned per query, this is a hard limit on top of any LLM-configurable pagination 
+  
+  # Optional: restrict which tools are available (omit to enable all tools)
+  # Note: show_database_config is always available
+  available_tools: ["execute_query", "table_summary", "search", "test_connection", "reload_config"]
