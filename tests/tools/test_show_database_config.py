@@ -49,12 +49,41 @@ def test_show_database_config_includes_correct_database_info(db_manager):
 
 def test_show_database_config_with_empty_config():
     """Test show_database_config with empty database config"""
-    from meeseeql.database_manager import AppConfig
+    from meeseeql.database_manager import AppConfig, GlobalSettings
 
-    empty_config = AppConfig(databases={}, settings={})
+    empty_config = AppConfig(databases={}, settings=GlobalSettings())
     empty_db_manager = DatabaseManager(empty_config)
 
     result = show_database_config(empty_db_manager)
 
     assert isinstance(result, DatabaseList)
     assert result.total_count == 0
+
+
+def test_show_database_config_does_not_include_passwords():
+    """Test that passwords are not included in the output"""
+    from meeseeql.database_manager import AppConfig, DatabaseConfig, GlobalSettings
+
+    config_with_password = AppConfig(
+        databases={
+            "test_db": DatabaseConfig(
+                type="postgresql",
+                description="Test DB with credentials",
+                host="localhost",
+                database="test",
+                username="user",
+                password="secret_password",
+            )
+        },
+        settings=GlobalSettings(),
+    )
+
+    db_manager = DatabaseManager(config_with_password)
+    result = show_database_config(db_manager)
+
+    output_str = str(result)
+    assert "secret_password" not in output_str
+    assert "password:" not in output_str
+
+    db_info = result.databases[0]
+    assert not hasattr(db_info, "password")

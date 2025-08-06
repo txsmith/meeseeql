@@ -87,9 +87,15 @@ class DatabaseConfig(BaseModel):
         return dialect_map[self.type]
 
 
+class GlobalSettings(BaseModel):
+    max_query_timeout: int = 30
+    max_rows_per_query: int = 500
+    available_tools: List[str] | None = None
+
+
 class AppConfig(BaseModel):
     databases: Dict[str, DatabaseConfig]
-    settings: Dict[str, Any]
+    settings: GlobalSettings = GlobalSettings()
     config_path: str | None = None
 
     @model_validator(mode="after")
@@ -165,9 +171,7 @@ class DatabaseManager:
 
             # Only add pool_timeout for non-SQLite databases
             if not str(url).startswith("sqlite"):
-                engine_kwargs["pool_timeout"] = self.config.settings.get(
-                    "max_query_timeout", 30
-                )
+                engine_kwargs["pool_timeout"] = self.config.settings.max_query_timeout
 
             # Snowflake doesn't have native async support, use sync engine with async wrapper
             if db_config.type == "snowflake":
@@ -272,6 +276,9 @@ class DatabaseManager:
             return "deny"
         else:
             return None
+
+    def get_available_tools(self) -> List[str] | None:
+        return self.config.settings.available_tools
 
     def reload_config(self, new_config: AppConfig, changed_db_names: set[str]):
         for db_name in changed_db_names:
