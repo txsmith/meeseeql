@@ -10,7 +10,7 @@ databases:
   chinook_sqlite_conn_str:
      type: sqlite
      description: blah
-     connection_string: "sqlite:///tests/tools/Chinook_Sqlite.sqlite"
+     connection_string: "sqlite:///tests/Chinook_Sqlite.sqlite"
   test_postgres:
     type: postgresql
     host: ihopethishostdoesnotexist.com
