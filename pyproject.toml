@@ -1,6 +1,6 @@
 [project]
 name = "meeseeql"
-version = "1.0.0"
+version = "1.1.0"
 description = "A FastMCP server for exploring SQL databases"
 
 requires-python = ">=3.11"
