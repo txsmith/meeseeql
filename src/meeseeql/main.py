@@ -9,7 +9,7 @@ import os
 from fastmcp import FastMCP
 from fastmcp.tools.tool import ToolResult
 from mcp.types import TextContent
-from meeseeql.database_manager import load_config, DatabaseManager
+from meeseeql.database_manager import load_config, DatabaseManager, QueryError
 from meeseeql import tools
 
 mcp = FastMCP("Database Explorer")
@@ -88,13 +88,19 @@ async def execute_query(
         page: Page number (default: 1)
         accurate_count: Run COUNT query for exact pagination (default: False, slower but accurate)
     """
-    result = await tools.execute_query(
-        get_or_init_db_manager(), database, query, limit, page, accurate_count
-    )
-    return ToolResult(
-        content=[TextContent(type="text", text=str(result))],
-        structured_content=result.model_dump(),
-    )
+    try:
+        result = await tools.execute_query(
+            get_or_init_db_manager(), database, query, limit, page, accurate_count
+        )
+        return ToolResult(
+            content=[TextContent(type="text", text=str(result))],
+            structured_content=result.model_dump(),
+        )
+    except QueryError as e:
+        if not e.is_user_error:
+            raise
+        msg = f"Query error: {e}\n\nUse table_summary to check the correct table and column names."
+        return ToolResult(content=[TextContent(type="text", text=msg)], is_error=True)
 
 
 async def table_summary(

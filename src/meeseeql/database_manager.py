@@ -4,6 +4,7 @@ from typing import Dict, Any, List
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncEngine
 from sqlalchemy import create_engine, Engine, text
 from sqlalchemy.engine.url import URL
+from sqlalchemy.exc import ProgrammingError, DataError, IntegrityError
 from pydantic import BaseModel, model_validator
 from meeseeql.password_provider import PasswordProvider, PassPasswordProvider
 
@@ -21,7 +22,9 @@ class ConfigurationError(Exception):
 
 
 class QueryError(Exception):
-    pass
+    @property
+    def is_user_error(self) -> bool:
+        return isinstance(self.__cause__, (ProgrammingError, DataError, IntegrityError))
 
 
 class DatabaseConfig(BaseModel):
