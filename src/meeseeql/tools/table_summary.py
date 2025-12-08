@@ -12,6 +12,18 @@ class TableNotFoundError(Exception):
     pass
 
 
+MAX_CELL_LENGTH = 100
+
+
+def _truncate_value(val: Any, max_length: int = MAX_CELL_LENGTH) -> Any:
+    if val is None:
+        return None
+    str_val = str(val)
+    if len(str_val) > max_length:
+        return str_val[:max_length] + "..."
+    return val
+
+
 class TableSummaryError(Exception):
     pass
 
@@ -434,7 +446,9 @@ async def table_summary(
         limit=5,
         page=1,
     )
-    sample_rows = [list(row.values()) for row in sample_response.rows]
+    sample_rows = [
+        [_truncate_value(val) for val in row.values()] for row in sample_response.rows
+    ]
 
     remaining_limit = limit
     current_offset = offset
