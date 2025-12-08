@@ -4,6 +4,7 @@ from typing import Dict, Any, List
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncEngine
 from sqlalchemy import create_engine, Engine, text
 from sqlalchemy.engine.url import URL
+from sqlalchemy.exc import ProgrammingError, DataError, IntegrityError
 from pydantic import BaseModel, model_validator
 from meeseeql.password_provider import PasswordProvider, PassPasswordProvider
 
@@ -20,8 +21,22 @@ class ConfigurationError(Exception):
     pass
 
 
+USER_ERROR_TYPES = (ProgrammingError, DataError, IntegrityError)
+
+
 class QueryError(Exception):
-    pass
+    def __init__(self, cause: Exception):
+        hint = ""
+        if isinstance(cause, USER_ERROR_TYPES):
+            hint = (
+                "\n\nHint: Use table_summary to check correct table and column names."
+            )
+        super().__init__(f"Error executing query: {cause}{hint}")
+        self.__cause__ = cause
+
+    @property
+    def is_user_error(self) -> bool:
+        return isinstance(self.__cause__, USER_ERROR_TYPES)
 
 
 class DatabaseConfig(BaseModel):
@@ -203,7 +218,7 @@ class DatabaseManager:
                     result = await conn.execute(text(query))
                     return result
                 except Exception as e:
-                    raise QueryError(f"Error executing query: {str(e)}") from e
+                    raise QueryError(e)
         else:
             loop = asyncio.get_event_loop()
 
@@ -212,7 +227,7 @@ class DatabaseManager:
                     try:
                         return conn.execute(text(query))
                     except Exception as e:
-                        raise QueryError(f"Error executing query: {str(e)}") from e
+                        raise QueryError(e)
 
             result = await loop.run_in_executor(None, _execute_sync)
             return result
