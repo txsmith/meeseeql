@@ -79,6 +79,10 @@ async def execute_query(
     accurate_count: bool = False,
 ) -> ToolResult:
     """Execute a SELECT query on the specified database with pagination.
+
+    IMPORTANT: Before using this tool directly, check if there's a relevant skill
+    that should be invoked first for the task at hand.
+
     Before running this command, check table_summary to ensure the correct structure.
 
     Args:
